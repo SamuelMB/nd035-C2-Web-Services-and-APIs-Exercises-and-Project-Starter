@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Map;
 
 @RunWith(SpringRunner.class)
@@ -34,14 +35,12 @@ public class PricingServiceApplicationTests {
 	}
 
 	@Test
-	public void shouldGetAllPrices() throws IOException {
-		ResponseEntity<String> entity = restTemplate.getForEntity("http://localhost:" + port + "/services/price", String.class);
-		Assert.assertEquals(HttpStatus.OK, entity.getStatusCode());
-	}
-
-	@Test
 	public void shouldGetPriceByVehicleId() {
-		ResponseEntity<String> entity = restTemplate.getForEntity("http://localhost:" + port + "/services/price/15", String.class);
+		ResponseEntity<Price> entity = restTemplate.getForEntity("http://localhost:" + port + "/services/price/15", Price.class);
+		Price price = entity.getBody();
 		Assert.assertEquals(HttpStatus.OK, entity.getStatusCode());
+		Assert.assertNotNull(price);
+		Assert.assertEquals("USD", price.getCurrency());
+		Assert.assertEquals(new BigDecimal("9830.83"), price.getPrice());
 	}
 }
