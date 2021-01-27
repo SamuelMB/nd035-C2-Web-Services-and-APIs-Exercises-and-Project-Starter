@@ -4,12 +4,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.PriceClient;
@@ -21,9 +21,14 @@ import com.udacity.vehicles.domain.manufacturer.Manufacturer;
 import com.udacity.vehicles.service.CarService;
 import java.net.URI;
 import java.util.Collections;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -33,6 +38,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * Implements testing of the CarController class.
@@ -97,6 +103,26 @@ public class CarControllerTest {
          *   below (the vehicle will be the first in the list).
          */
 
+        MvcResult result = mvc.perform(get(new URI("/cars"))
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
+
+        JSONObject jsonObject = new JSONObject(result.getResponse().getContentAsString());
+        JSONArray jsonArray = jsonObject.getJSONObject("_embedded").getJSONArray("carList");
+        JSONObject object = jsonArray.getJSONObject(0);
+        String stringObject = object.toString();
+
+        Car carRecovered = json.parseObject(stringObject);
+        Car car = getCar();
+
+        Assert.assertEquals((Long) 1L, carRecovered.getId());
+        Assert.assertEquals(car.getPrice(), carRecovered.getPrice());
+        Assert.assertEquals(car.getDetails().getModel(), carRecovered.getDetails().getModel());
+        Assert.assertEquals(car.getLocation().getLat(), carRecovered.getLocation().getLat());
+        Assert.assertEquals(car.getLocation().getLon(), carRecovered.getLocation().getLon());
+        Assert.assertEquals(car.getCondition(), carRecovered.getCondition());
     }
 
     /**
@@ -109,6 +135,23 @@ public class CarControllerTest {
          * TODO: Add a test to check that the `get` method works by calling
          *   a vehicle by ID. This should utilize the car from `getCar()` below.
          */
+        MvcResult result = mvc.perform(get(new URI("/cars/1"))
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+
+        Car carRecovered = json.parseObject(contentAsString);
+        Car car = getCar();
+
+        Assert.assertEquals((Long) 1L, carRecovered.getId());
+        Assert.assertEquals(car.getPrice(), carRecovered.getPrice());
+        Assert.assertEquals(car.getDetails().getModel(), carRecovered.getDetails().getModel());
+        Assert.assertEquals(car.getLocation().getLat(), carRecovered.getLocation().getLat());
+        Assert.assertEquals(car.getLocation().getLon(), carRecovered.getLocation().getLon());
+        Assert.assertEquals(car.getCondition(), carRecovered.getCondition());
     }
 
     /**
@@ -122,6 +165,14 @@ public class CarControllerTest {
          *   when the `delete` method is called from the Car Controller. This
          *   should utilize the car from `getCar()` below.
          */
+
+        mvc.perform(delete(new URI("/cars/1"))
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        verify(carService).delete(1L);
     }
 
     /**
